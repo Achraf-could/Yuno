@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Space Survival 3D</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#06122a;font-family:"Segoe UI",Tahoma,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+#cv{position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#scr{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) 8px env(safe-area-inset-bottom,0);background:radial-gradient(ellipse at 30% 20%,#3a8fd844,#0a2a5a55 60%,#04102888);z-index:10}
+.win{width:min(460px,96vw);max-height:96vh;overflow:auto;background:linear-gradient(#ffffff55,#ffffff22);backdrop-filter:blur(10px);border:1px solid #fffc;border-radius:8px;box-shadow:0 0 0 1px #0008,0 8px 30px #000a}
+.tb{display:flex;justify-content:space-between;align-items:center;padding:3px 6px 3px 10px;background:linear-gradient(#9fd0f7cc,#3a7fc0cc);border-bottom:1px solid #fff8;font-size:13px;text-shadow:0 0 6px #000}
+.x{background:linear-gradient(#e8998a,#c0392b);width:34px;height:18px;border:1px solid #fffa;border-radius:3px;color:#fff;font-size:11px}
+.bd{padding:10px;display:flex;flex-direction:column;gap:7px;font-size:14px}
+.b{font:inherit;color:#012;padding:10px 14px;border:1px solid #fffb;border-radius:4px;background:linear-gradient(#f4faff,#bcdcf5 50%,#9ccaee 51%,#c9e6fb);box-shadow:0 1px 3px #0008;min-height:44px}
+.b:active{filter:brightness(.85)}.b.sel{outline:3px solid #3af;background:linear-gradient(#cff,#8cf 50%,#5af 51%,#9df)}
+.row{display:flex;gap:6px;align-items:center;justify-content:space-between}
+.sw{width:32px;height:32px;border:2px solid #fff;border-radius:4px}
+#hud{position:fixed;top:env(safe-area-inset-top,0);left:0;right:0;display:none;padding:6px;font-size:11px;pointer-events:none;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.g{background:#0a2a5a99;border:1px solid #fff8;border-radius:6px;padding:3px 6px;backdrop-filter:blur(4px)}
+.bar{height:5px;background:#0008;border-radius:3px;width:70px;overflow:hidden}.bar i{display:block;height:100%}
+#q{position:fixed;top:calc(env(safe-area-inset-top,0) + 6px);right:6px;display:none;z-index:3;padding:6px 12px;font-size:16px}
+#mk{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#bn{position:fixed;top:40%;left:0;right:0;text-align:center;font-size:24px;font-weight:bold;text-shadow:0 0 14px #7df;pointer-events:none;opacity:0;transition:opacity .6s;padding:0 20px}
+#fl{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .4s}
+#tc{position:fixed;bottom:calc(env(safe-area-inset-bottom,0) + 10px);right:10px;display:none;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:220px;z-index:5}
+#tc .b{width:58px;height:58px;border-radius:50%;opacity:.9;font-size:14px;padding:0;display:flex;align-items:center;justify-content:center}
+#tc .fire{background:linear-gradient(#ff9080,#c02020);color:#fff}
+#tc .boost{background:linear-gradient(#a0ffb0,#20a040);color:#fff}
+#joy{position:fixed;left:20px;bottom:calc(env(safe-area-inset-bottom,0) + 20px);width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,#ffffff10 0%,#ffffff05 70%,transparent 100%);border:2px solid #ffffff25;display:none;pointer-events:none;z-index:4}
+#joy::after{content:'';position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:radial-gradient(circle,#7df 0%,#08f 80%);box-shadow:0 0 20px #08f8;transition:transform .05s}
+@media (pointer:coarse){#joy{display:block}.bd{font-size:15px}.b{padding:12px 14px}}
+</style></head><body>
+<canvas id="cv"></canvas><canvas id="mk"></canvas>
+<div id="hud"></div><button class="b" id="q" onclick="toMenu()">☰</button>
+<div id="bn"></div><div id="fl"></div>
+<div id="joy"></div>
+<div id="tc">
+  <button class="b" id="bp">4D</button>
+  <button class="b" id="bd">🛬</button>
+  <button class="b" id="bl">🎯</button>
+  <button class="b boost" id="bb">🚀</button>
+  <button class="b fire" id="bf">🔥</button>
+</div>
+<div id="scr"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const L={
+en:{title:'Space Survival 3D',single:'Single Player',multi:'Multiplayer (Rooms)',set:'Settings',info:'Info',exit:'Exit',back:'Back',start:'Start',room:'Room',cycle:'Sun cycle',win:'Stage complete!',lose:'Your rocket was destroyed',winner:'Winner',again:'Play again',menu:'Menu',lang:'Language',fov:'Field of view (POV)',music:'Music',sfx:'Sound effects',bye:'Thanks for playing! You can close this tab.',human:'Human',bot:'Bot',off:'Empty',d4:'4D DIMENSION!',sun:'New sun cycle',roomsT:'Choose a room',ships:'Ships',shipsT:'Choose your ship',infoT:'Fight bots or friends in a big galaxy. In single player, survive 5 sun cycles. Enter the galaxy portal to jump to the 4th dimension: you can then phase between two layers (4D button / Shift) and only hit things in your own layer.',ctrl:'📱 Touch: Left joystick = push UP to fly forward & climb, pull DOWN to go backward, left/right to steer. Right buttons: 🔥 fire, 🚀 boost, 🎯 lock, 🛬 land, 4D. · 💻 PC: WASD, Space up, Ctrl down, E boost, Q lock, L land, Shift phase.',need:'Need at least 2 players',stage:'Stage',stages:'Choose a stage',next:'Next stage',done:'All stages complete!',landFar:'Get closer to a planet to land',landed:'Landed on',takeoff:'Take off!'},
+ar:{title:'النجاة في الكون',single:'لعب فردي',multi:'لعب جماعي',set:'الإعدادات',info:'معلومات',exit:'خروج',back:'رجوع',start:'ابدأ',room:'غرفة',cycle:'دورة الشمس',win:'أنهيت المرحلة!',lose:'انفجر صاروخك',winner:'الفائز',again:'العب مرة ثانية',menu:'القائمة',lang:'اللغة',fov:'زاوية الرؤية',music:'الموسيقى',sfx:'المؤثرات',bye:'شكرًا للعب!',human:'لاعب',bot:'بوت',off:'فاضي',d4:'البعد الرابع 4D!',sun:'دورة شمس جديدة',roomsT:'اختر غرفة',ships:'الطائرات',shipsT:'اختر طائرتك',infoT:'قاتل البوتات أو أصحابك في مجرة كبيرة. في الفردي عيش ٥ دورات شمس. ادخل بوابة المجرة للبعد الرابع.',ctrl:'📱 باللمس: عصا يسار = دفع للأعلى للطيران والصعود، سحب للأسفل للرجوع، يمين/يسار للدوران. أزرار يمين: 🔥 نار، 🚀 بوست، 🎯 قفل، 🛬 هبوط، 4D. · 💻 بالكمبيوتر: WASD، Space صعود، Ctrl نزول، E بوست، Q قفل، L هبوط، Shift طبقة.',need:'لازم لاعبين اثنين على الأقل',stage:'مرحلة',stages:'اختر مرحلة',next:'المرحلة التالية',done:'أنهيت كل المراحل!',landFar:'قرّب من كوكب عشان تهبط',landed:'هبطت على',takeoff:'إقلاع!'},
+fr:{title:'Survie Spatiale 3D',single:'Solo',multi:'Multijoueur',set:'Paramètres',info:'Infos',exit:'Quitter',back:'Retour',start:'Démarrer',room:'Salle',cycle:'Cycle solaire',win:'Niveau terminé !',lose:'Fusée détruite',winner:'Gagnant',again:'Rejouer',menu:'Menu',lang:'Langue',fov:'POV',music:'Musique',sfx:'Effets',bye:'Merci!',human:'Humain',bot:'Bot',off:'Vide',d4:'4D!',sun:'Nouveau cycle',roomsT:'Choisissez une salle',ships:'Vaisseaux',shipsT:'Choisissez votre vaisseau',infoT:'Combattez des bots ou amis.',ctrl:'📱 Joystick gauche: poussez haut pour avancer et monter, bas pour reculer. Boutons droite: 🔥 tir, 🚀 turbo, 🎯 cible, 🛬 atterrir, 4D.',need:'Au moins 2 joueurs',stage:'Niveau',stages:'Choisir',next:'Suivant',done:'Terminé !',landFar:'Approchez-vous',landed:'Atterri sur',takeoff:'Décollage !'}};
+let lang='en',fov=75,mus=.5,sfxV=.7,state='menu',single=true,room=0,shipType=0;
+const T=k=>L[lang][k],$=i=>document.getElementById(i);
+const COLS=[0xff3b3b,0x3b8bff,0x3bff6a,0xffd23b,0xff3bd4,0x3bf0ff,0xff8c3b,0xa56bff,0xffffff,0x9aff3b];
+const SHIP_NAMES=['🚀 Rocket','✈️ Beto Jet','🛦 Su-18','🛸 UFO','✈️ B-2 Bomber','⚡ Interceptor'];
+const ROOMS=[['Alpha',25,150],['Beta',40,220],['Gamma',60,300]];
+const STAGES=[{b:1,a:25,bg:0x050a1e,d4:0},{b:2,a:35,bg:0x0a0820,d4:0},{b:3,a:45,bg:0x150a14,d4:1},{b:4,a:55,bg:0x0a1a14,d4:1},{b:5,a:65,bg:0x1a0a0a,d4:1}];
+let stg=0,unlocked=1,won=false;try{unlocked=+localStorage.getItem('ss_un')||1}catch(e){}
+let CFG=[{t:'human',c:0},{t:'bot',c:1},{t:'bot',c:2},{t:'off',c:3}];
+/* Audio */
+let AC;function ac(){if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();return AC}
+function tone(f,d,ty,v,sl){try{const a=ac(),o=a.createOscillator(),g=a.createGain(),n=a.currentTime;o.type=ty;o.frequency.setValueAtTime(f,n);if(sl)o.frequency.exponentialRampToValueAtTime(Math.max(20,f*sl),n+d);g.gain.setValueAtTime(Math.max(v,1e-4),n);g.gain.exponentialRampToValueAtTime(1e-4,n+d);o.connect(g);g.connect(a.destination);o.start();o.stop(n+d)}catch(e){}}
+const SFX={shoot:()=>tone(700,.12,'square',.07*sfxV,.3),hit:()=>tone(220,.15,'sawtooth',.12*sfxV,.5),boom:()=>tone(130,.5,'sawtooth',.2*sfxV,.2),portal:()=>tone(150,1.2,'sine',.25*sfxV,8),cyc:()=>tone(440,.5,'triangle',.15*sfxV,2),click:()=>tone(900,.05,'sine',.08*sfxV)};
+const NT=[220,261,330,392,330,261,196,247];let ni=0;
+setInterval(()=>{if(mus>0){tone(NT[ni++%8]*(dim4?1.5:1),.6,'sine',.05*mus)}},350);
+/* Three */
+const R=new THREE.WebGLRenderer({canvas:$('cv')});R.setPixelRatio(Math.min(devicePixelRatio,2));
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(75,1,.1,2000);
+function rs(){$('mk').width=innerWidth;$('mk').height=innerHeight;R.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}addEventListener('resize',rs);rs();
+sc.add(new THREE.AmbientLight(0x7080b0,.9));
+const sl=new THREE.PointLight(0xfff0c0,2.2,600);sc.add(sl);
+const sun=new THREE.Mesh(new THREE.SphereGeometry(7,16,12),new THREE.MeshBasicMaterial({color:0xffcc33}));sc.add(sun);
+const halo=new THREE.Mesh(new THREE.SphereGeometry(10,16,12),new THREE.MeshBasicMaterial({color:0xff9900,transparent:true,opacity:.25,side:THREE.BackSide}));sun.add(halo);
+const tess=new THREE.Group();[9,5.5].forEach(s=>tess.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(s,s,s)),new THREE.LineBasicMaterial({color:0xff44ff}))));tess.visible=false;sc.add(tess);
+{const p=[];for(let i=0;i<900;i++){const u=Math.random()*2-1,a=Math.random()*6.283,q=Math.sqrt(1-u*u),r=300+Math.random()*300;p.push(q*Math.cos(a)*r,u*r,q*Math.sin(a)*r)}
+const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));sc.add(new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:1.6,fog:false})))}
+const SH=new THREE.IcosahedronGeometry(1,0),PG=new THREE.BoxGeometry(.6,.6,.6),BG=new THREE.SphereGeometry(.5,6,6);
+const pm={};function pmat(c){return pm[c]||(pm[c]=new THREE.MeshBasicMaterial({color:c}))}
+
+/* ========== Ship Builders ========== */
+function stdMat(color,opts){return new THREE.MeshStandardMaterial(Object.assign({color,flatShading:true,transparent:true,roughness:.5},opts||{}))}
+
+function mkRocket(col){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.7,.9,3.5,8),stdMat(0xffffff));
+  body.rotation.x=Math.PI/2;g.add(body);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.7,1.5,8),stdMat(col));nose.rotation.x=Math.PI/2;nose.position.z=2.5;g.add(nose);
+  const glass=new THREE.Mesh(new THREE.SphereGeometry(.33,8,8),stdMat(0x88ccff,{opacity:.8,roughness:.2}));glass.position.set(0,.5,.85);g.add(glass);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(.38,.08,8,16),stdMat(0xffffff));ring.position.set(0,.5,.8);ring.rotation.x=Math.PI/2;g.add(ring);
+  const finShape=new THREE.Shape();finShape.moveTo(0,0);finShape.lineTo(1.4,-.4);finShape.lineTo(1.4,-1.4);finShape.lineTo(0,-.8);finShape.lineTo(0,0);
+  const finGeo=new THREE.ExtrudeGeometry(finShape,{depth:.12,bevelEnabled:false});finGeo.translate(0,0,-.06);
+  for(let i=0;i<4;i++){const fin=new THREE.Mesh(finGeo,stdMat(col));fin.rotation.z=i*Math.PI/2;fin.position.z=-1.3;g.add(fin)}
+  const noz=new THREE.Mesh(new THREE.CylinderGeometry(.5,.7,.4,8),stdMat(0x555555));noz.rotation.x=Math.PI/2;noz.position.z=-1.8;g.add(noz);
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.6,2.5,8),new THREE.MeshBasicMaterial({color:0xffa030,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-3.2;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function mkJet(col){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.35,.65,4.2,6),stdMat(0xcccccc));body.rotation.x=Math.PI/2;g.add(body);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.35,1.6,6),stdMat(col));nose.rotation.x=Math.PI/2;nose.position.z=2.9;g.add(nose);
+  const cockpit=new THREE.Mesh(new THREE.SphereGeometry(.4,8,6),stdMat(0x88ccff,{opacity:.8,roughness:.2}));cockpit.scale.set(.85,.6,1.5);cockpit.position.set(0,.35,.8);g.add(cockpit);
+  const wingS=new THREE.Shape();wingS.moveTo(0,0);wingS.lineTo(2.3,-.4);wingS.lineTo(2.3,-1.1);wingS.lineTo(0,-.55);
+  const wGeo=new THREE.ExtrudeGeometry(wingS,{depth:.1,bevelEnabled:false});
+  const wL=new THREE.Mesh(wGeo,stdMat(0xdddddd));wL.rotation.y=Math.PI/2;wL.position.set(-.25,0,-.4);g.add(wL);
+  const wR=new THREE.Mesh(wGeo,stdMat(0xdddddd));wR.rotation.y=-Math.PI/2;wR.position.set(.25,0,-.4);g.add(wR);
+  const tail=new THREE.Mesh(new THREE.BoxGeometry(.1,1.1,.7),stdMat(col));tail.position.set(0,.65,-1.7);g.add(tail);
+  const tailW=new THREE.Mesh(new THREE.BoxGeometry(2.2,.1,.45),stdMat(0xdddddd));tailW.position.z=-1.7;g.add(tailW);
+  const noz=new THREE.Mesh(new THREE.CylinderGeometry(.45,.5,.4,8),stdMat(0x333333));noz.rotation.x=Math.PI/2;noz.position.z=-2.3;g.add(noz);
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.45,2,6),new THREE.MeshBasicMaterial({color:0xff8820,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-3.3;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function mkSu18(col){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.4,.8,4.8,6),stdMat(0x444455));body.rotation.x=Math.PI/2;g.add(body);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.4,2,6),stdMat(0x333340));nose.rotation.x=Math.PI/2;nose.position.z=3.4;g.add(nose);
+  const cockpit=new THREE.Mesh(new THREE.SphereGeometry(.45,8,6),stdMat(0x66d8ff,{opacity:.85,roughness:.2}));cockpit.scale.set(.85,.55,1.6);cockpit.position.set(0,.42,.6);g.add(cockpit);
+  const wS=new THREE.Shape();wS.moveTo(0,0);wS.lineTo(2.6,.4);wS.lineTo(2.4,-.6);wS.lineTo(0,-.4);
+  const wG=new THREE.ExtrudeGeometry(wS,{depth:.12,bevelEnabled:false});
+  const wL=new THREE.Mesh(wG,stdMat(col));wL.rotation.y=Math.PI/2;wL.position.set(-.3,0,-.2);g.add(wL);
+  const wR=new THREE.Mesh(wG,stdMat(col));wR.rotation.y=-Math.PI/2;wR.position.set(.3,0,-.2);g.add(wR);
+  [-.5,.5].forEach(x=>{const tail=new THREE.Mesh(new THREE.BoxGeometry(.1,1.3,.6),stdMat(col));tail.position.set(x,.75,-1.9);tail.rotation.z=x*.3;g.add(tail)});
+  [-.4,.4].forEach(x=>{const n=new THREE.Mesh(new THREE.CylinderGeometry(.3,.35,.5,8),stdMat(0x222222));n.rotation.x=Math.PI/2;n.position.set(x,-.1,-2.5);g.add(n)});
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.6,2.4,6),new THREE.MeshBasicMaterial({color:0xff6620,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-3.6;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function mkUFO(col){
+  const g=new THREE.Group();
+  const disc=new THREE.Mesh(new THREE.CylinderGeometry(2.2,2.2,.5,16),stdMat(0xcccccc,{roughness:.3}));g.add(disc);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(2,0.25,8,24),stdMat(col));rim.rotation.x=Math.PI/2;rim.position.y=-.15;g.add(rim);
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(.9,16,8,0,Math.PI*2,0,Math.PI/2),stdMat(0x88ddff,{opacity:.7,roughness:.15}));dome.position.y=.25;g.add(dome);
+  const bottom=new THREE.Mesh(new THREE.SphereGeometry(.5,8,6,0,Math.PI*2,Math.PI/2,Math.PI/2),stdMat(0x888899));bottom.position.y=-.25;g.add(bottom);
+  for(let i=0;i<8;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(.15,6,6),new THREE.MeshBasicMaterial({color:0xffdd66}));const a=i/8*Math.PI*2;l.position.set(Math.cos(a)*2,-.1,Math.sin(a)*2);g.add(l)}
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.6,1.5,8),new THREE.MeshBasicMaterial({color:0x66ddff,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-2.8;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function mkBomber(col){
+  const g=new THREE.Group();
+  const wingS=new THREE.Shape();wingS.moveTo(0,1);wingS.lineTo(-3.5,-1.5);wingS.lineTo(-1.2,-1);wingS.lineTo(0,-1.5);wingS.lineTo(1.2,-1);wingS.lineTo(3.5,-1.5);wingS.lineTo(0,1);
+  const wG=new THREE.ExtrudeGeometry(wingS,{depth:.3,bevelEnabled:false});
+  const wing=new THREE.Mesh(wG,stdMat(0x222233,{roughness:.7}));wing.rotation.x=-Math.PI/2;wing.position.z=-.5;g.add(wing);
+  const cockpit=new THREE.Mesh(new THREE.SphereGeometry(.35,8,6),stdMat(0x66aaff,{opacity:.8}));cockpit.scale.set(1,.7,1.4);cockpit.position.set(0,.15,.3);g.add(cockpit);
+  const accent=new THREE.Mesh(new THREE.BoxGeometry(.6,.35,3.5),stdMat(col));accent.position.set(0,.15,-1.5);g.add(accent);
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.5,1.8,6),new THREE.MeshBasicMaterial({color:0xff9930,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-3.8;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function mkInterceptor(col){
+  const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.ConeGeometry(.5,5,4),stdMat(0xe0e0e0));body.rotation.x=Math.PI/2;g.add(body);
+  for(let i=0;i<4;i++){const fin=new THREE.Mesh(new THREE.BoxGeometry(.15,1.5,1.2),stdMat(col));fin.rotation.z=i*Math.PI/2+.7;fin.position.z=-1.8;g.add(fin)}
+  const tip=new THREE.Mesh(new THREE.ConeGeometry(.28,1.2,4),stdMat(col));tip.rotation.x=Math.PI/2;tip.position.z=3.1;g.add(tip);
+  const wS=new THREE.Shape();wS.moveTo(0,0);wS.lineTo(2,-.9);wS.lineTo(2,-1.3);wS.lineTo(0,-.4);
+  const wG=new THREE.ExtrudeGeometry(wS,{depth:.08,bevelEnabled:false});
+  const wL=new THREE.Mesh(wG,stdMat(col));wL.rotation.y=Math.PI/2;wL.position.set(-.2,0,-.3);g.add(wL);
+  const wR=new THREE.Mesh(wG,stdMat(col));wR.rotation.y=-Math.PI/2;wR.position.set(.2,0,-.3);g.add(wR);
+  const eng=new THREE.Mesh(new THREE.CylinderGeometry(.35,.4,.5,8),new THREE.MeshBasicMaterial({color:0x44eeff}));eng.rotation.x=Math.PI/2;eng.position.z=-2.5;g.add(eng);
+  const fl=new THREE.Mesh(new THREE.ConeGeometry(.5,2.5,6),new THREE.MeshBasicMaterial({color:0x44eeff,transparent:true}));fl.rotation.x=-Math.PI/2;fl.position.z=-3.7;g.add(fl);
+  sc.add(g);return{g,fl};
+}
+
+function buildShip(type,col){
+  if(type==0)return mkRocket(col);
+  if(type==1)return mkJet(col);
+  if(type==2)return mkSu18(col);
+  if(type==3)return mkUFO(col);
+  if(type==4)return mkBomber(col);
+  if(type==5)return mkInterceptor(col);
+  return mkRocket(col);
+}
+
+/* State */
+let ships=[],bul=[],ast=[],par=[],portal=null,dim4=false,cyc=1,ct=0,gt=0,over=false,cx=0,cz=0,shake=0,lastT=performance.now(),hudT=0;
+let RAD=260;const keys={};
+const KM=[
+  {f:'KeyW',bk:'KeyS',l:'KeyA',r:'KeyD',up:'Space',dn:'ControlLeft',fire:'KeyF',boost:'KeyE',phase:'ShiftLeft'},
+  {f:'ArrowUp',bk:'ArrowDown',l:'ArrowLeft',r:'ArrowRight',up:'PageUp',dn:'PageDown',fire:'Enter',boost:'Period',phase:'ShiftRight'},
+  {f:'KeyI',bk:'KeyK',l:'KeyJ',r:'KeyL',up:'KeyU',dn:'KeyO',fire:'KeyP',boost:'KeyB',phase:'KeyN'},
+  {f:'KeyT',bk:'KeyG',l:'KeyF',r:'KeyH',up:'KeyY',dn:'KeyV',fire:'KeyR',boost:'KeyZ',phase:'KeyX'}
+];
+let joy=null,tf=0,tp=0,tb=0,camH=0,kick=0,cds=22,lockT=null;
+let joyEl=null;
+const isTouch=()=>matchMedia('(pointer:coarse)').matches;
+
+function updateJoyVisual(dx,dy){
+  if(!joyEl)return;
+  const maxR=45,dist=Math.min(Math.hypot(dx,dy),maxR),ang=Math.atan2(dy,dx);
+  const kx=Math.cos(ang)*dist,ky=Math.sin(ang)*dist;
+  let style=joyEl.querySelector('style.joyStyle');
+  if(!style){style=document.createElement('style');style.className='joyStyle';joyEl.appendChild(style)}
+  style.textContent=`#joy::after{transform:translate(${kx}px,${ky}px)}`;
+}
+
+function setupTouch(){
+  const cv=$('cv');let touchId=null;
+  cv.addEventListener('touchstart',e=>{ac();for(const t of e.changedTouches){if(t.clientX<innerWidth*.55&&touchId===null){touchId=t.identifier;joy={id:t.identifier,ox:t.clientX,oy:t.clientY,dx:0,dy:0};if(joyEl){joyEl.style.left=(t.clientX-70)+'px';joyEl.s
